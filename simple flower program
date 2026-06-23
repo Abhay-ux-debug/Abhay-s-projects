@@ -1,0 +1,22 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+theta = np.linspace(0, 4 * np.pi, 1000)
+
+# Petals
+r = np.abs(np.sin(5 * theta))
+x = r * np.cos(theta)
+y = r * np.sin(theta)
+
+fig, ax = plt.subplots(figsize=(6, 6), facecolor="black")
+ax.plot(x, y, color="violet", linewidth=2)
+ax.fill(x, y, color="pink", alpha=0.5)
+
+# Center
+circle = plt.Circle((0, 0), 0.1, color="yellow")
+ax.add_patch(circle)
+
+ax.set_aspect("equal")
+ax.axis("off")
+plt.title("Flower", color="white")
+plt.show()
