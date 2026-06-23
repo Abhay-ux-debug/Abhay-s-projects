@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Humanity OS — The Operating System For Your Life</title>
+<style>
+  /* ===================================================================
+     HUMANITY OS — DESIGN TOKENS
+  =================================================================== */
+  :root{
+    --bg-void:#04050b;
+    --bg-panel:#0a0d18;
+    --bg-panel-2:#0d1122;
+    --glass-bg: rgba(15,19,38,0.55);
+    --glass-bg-strong: rgba(15,19,38,0.82);
+    --glass-border: rgba(140,160,255,0.16);
+    --glass-border-strong: rgba(140,160,255,0.32);
+
+    --neon-blue:#33d9ff;
+    --neon-blue-dim: rgba(51,217,255,0.35);
+    --neon-purple:#a657ff;
+    --neon-purple-dim: rgba(166,87,255,0.35);
+    --neon-pink:#ff4fc3;
+    --neon-green:#3df2a8;
+
+    --text-primary:#eef1ff;
+    --text-muted:#8d93b8;
+    --text-faint:#5a5f80;
+    --danger:#ff5c7a;
+    --warning:#ffce54;
+
+    --grad-main: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+    --grad-main-2: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
+
+    --font-display:'Consolas','SF Mono','Courier New',monospace;
+    --font-body:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --font-mono:'Consolas','SF Mono','Courier New',monospace;
+
+    --radius-lg:20px;
+    --radius-md:14px;
+    --radius-sm:8px;
+
+    --sidebar-w:264px;
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(166,87,255,0.10), transparent 45%),
+      radial-gradient(circle at 85% 20%, rgba(51,217,255,0.08), transparent 45%),
+      var(--bg-void);
+    color:var(--text-primary);
+    font-family:var(--font-body);
+    overflow-x:hidden;
+    min-height:100vh;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  ::-webkit-scrollbar{ width:9px; height:9px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:linear-gradient(var(--neon-blue),var(--neon-purple)); border-radius:10px; }
+
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+  ul,ol{ list-style:none; }
+
+  :focus-visible{ outline:2px solid var(--neon-blue); outline-offset:3px; border-radius:4px; }
+
+  #bg-canvas{
+    position:fixed; inset:0; width:100vw; height:100vh; z-index:0; pointer-events:none;
+  }
+
+  /* ===================================================================
+     LAYOUT SHELL
+  =================================================================== */
+  .app-shell{ position:relative; z-index:1; display:flex; min-height:100vh; }
+
+  .sidebar{
+    position:fixed; top:0; left:0; height:100vh; width:var(--sidebar-w);
+    background:var(--glass-bg-strong);
+    border-right:1px solid var(--glass-border);
+    backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+    display:flex; flex-direction:column; padding:28px 20px;
+    z-index:50; transition:transform .35s cubic-bezier(.4,0,.2,1);
+  }
+
+  .sidebar-brand{ display:flex; align-items:center; gap:12px; padding:6px 6px 28px; border-bottom:1px solid var(--glass-border); margin-bottom:24px; }
+  .brand-mark{
+    font-size:26px; width:42px; height:42px; display:flex; align-items:center; justify-content:center;
+    border-radius:12px; border:1px solid var(--glass-border-strong);
+    background:linear-gradient(135deg, rgba(51,217,255,.15), rgba(166,87,255,.15));
+    color:var(--neon-blue); box-shadow:0 0 18px var(--neon-blue-dim);
+  }
+  .brand-text strong{ font-family:var(--font-display); font-size:15px; letter-spacing:1px; display:block; }
+  .brand-text strong span{ color:var(--neon-blue); }
+  .brand-text small{ font-family:var(--font-mono); font-size:10px; color:var(--text-faint); letter-spacing:1px; text-transform:uppercase; }
+
+  .sidebar-nav{ display:flex; flex-direction:column; gap:4px; flex:1; }
+  .nav-link{
+    display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:var(--radius-sm);
+    color:var(--text-muted); font-size:13.5px; font-weight:600; letter-spacing:.3px;
+    transition:all .2s ease; position:relative; border:1px solid transparent;
+  }
+  .nav-icon{ font-size:15px; width:18px; text-align:center; color:var(--neon-blue); opacity:.85; }
+  .nav-link:hover{ background:rgba(255,255,255,0.04); color:var(--text-primary); }
+  .nav-link.active{
+    color:var(--text-primary); background:rgba(51,217,255,0.08);
+    border-color:var(--glass-border-strong); box-shadow:inset 0 0 0 1px rgba(51,217,255,.08), 0 0 16px rgba(51,217,255,.08);
+  }
+  .nav-link.active .nav-icon{ color:var(--neon-purple); text-shadow:0 0 8px var(--neon-purple-dim); }
+
+  .sidebar-footer{ border-top:1px solid var(--glass-border); padding-top:18px; display:flex; flex-direction:column; gap:10px; }
+  .status-line{ display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:10.5px; letter-spacing:1px; color:var(--text-faint); text-transform:uppercase; }
+  .status-dot{ width:7px; height:7px; border-radius:50%; background:var(--neon-green); box-shadow:0 0 8px var(--neon-green); animation:pulseDot 2.4s infinite; }
+  .mini-level{ font-family:var(--font-mono); font-size:11px; color:var(--text-muted); letter-spacing:1px; }
+  .mini-level span{ color:var(--neon-blue); font-weight:700; }
+
+  .menu-toggle{
+    display:none; position:fixed; top:16px; left:16px; z-index:60; width:42px; height:42px;
+    border-radius:12px; background:var(--glass-bg-strong); border:1px solid var(--glass-border-strong);
+    color:var(--text-primary); font-size:18px; cursor:pointer; backdrop-filter:blur(12px);
+  }
+
+  .main-content{ margin-left:var(--sidebar-w); flex:1; min-width:0; }
+
+  .panel{ padding:110px 64px; position:relative; }
+  .panel + .panel{ border-top:1px solid rgba(255,255,255,0.04); }
+
+  .panel-header{ max-width:760px; margin-bottom:48px; }
+  .panel-index{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:3px; color:var(--neon-blue);
+    text-transform:uppercase; display:inline-block; margin-bottom:14px; opacity:.85;
+  }
+  .panel-header h2{ font-family:var(--font-display); font-size:clamp(26px,3vw,38px); letter-spacing:.5px; margin-bottom:14px;
+    background:var(--grad-main); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .panel-header p{ color:var(--text-muted); font-size:15.5px; max-width:600px; }
+
+  .grid-2col{ display:grid; grid-template-columns:1fr 1fr; gap:28px; align-items:start; }
+  .charts-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+
+  /* ===================================================================
+     GLASS CARD
+  =================================================================== */
+  .glass-card{
+    position:relative; background:var(--glass-bg); border:1px solid var(--glass-border);
+    border-radius:var(--radius-lg); padding:32px; backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    box-shadow:0 20px 60px -30px rgba(0,0,0,0.7); overflow:hidden;
+    transition:transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+    animation:fadeInUp .7s ease both;
+  }
+  .glass-card::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:var(--grad-main); opacity:.7;
+  }
+  .glass-card::after{
+    content:''; position:absolute; width:34px; height:34px; top:14px; right:14px;
+    border-top:1px solid var(--glass-border-strong); border-right:1px solid var(--glass-border-strong);
+    border-radius:0 8px 0 0; opacity:.6; pointer-events:none;
+  }
+  .glass-card:hover{
+    transform:translateY(-4px); border-color:var(--glass-border-strong);
+    box-shadow:0 26px 70px -30px rgba(0,0,0,0.8), 0 0 30px -10px rgba(51,217,255,0.18);
+  }
+  .glass-card h3{ font-family:var(--font-display); font-size:15px; letter-spacing:.5px; margin-bottom:18px; color:var(--text-primary); }
+
+  /* ===================================================================
+     HERO
+  =================================================================== */
+  .hero-panel{
+    min-height:100vh; display:flex; flex-direction:column; justify-content:center;
+    padding:0 64px; position:relative; overflow:hidden; border-top:none;
+  }
+  .hero-grid-overlay{
+    position:absolute; inset:-50% -50% -50% -50%; z-index:0;
+    background-image:
+      linear-gradient(rgba(51,217,255,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(51,217,255,0.07) 1px, transparent 1px);
+    background-size:48px 48px;
+    transform:perspective(500px) rotateX(62deg) translateY(0);
+    mask-image:linear-gradient(to bottom, transparent, black 30%, black 60%, transparent);
+    animation:gridScroll 6s linear infinite;
+    opacity:.5;
+  }
+  @keyframes gridScroll{ from{ background-position-y:0; } to{ background-position-y:48px; } }
+
+  .hero-content{ position:relative; z-index:2; max-width:780px; }
+  .hero-eyebrow{
+    display:inline-flex; align-items:center; gap:10px; font-family:var(--font-mono); font-size:11.5px;
+    letter-spacing:2.5px; text-transform:uppercase; color:var(--neon-blue); margin-bottom:26px;
+    border:1px solid var(--glass-border-strong); padding:8px 16px; border-radius:999px; background:var(--glass-bg);
+  }
+  .pulse-dot{ width:7px; height:7px; border-radius:50%; background:var(--neon-blue); box-shadow:0 0 10px var(--neon-blue); animation:pulseDot 2s infinite; }
+
+  .hero-title{ font-family:var(--font-display); font-weight:700; font-size:clamp(46px,8vw,98px); line-height:1; letter-spacing:1px; margin-bottom:22px; }
+  .glitch-text{ position:relative; display:inline-block; color:var(--text-primary); }
+  .glitch-text::before, .glitch-text::after{
+    content:attr(data-text); position:absolute; left:0; top:0; width:100%; height:100%; background:transparent;
+  }
+  .glitch-text::before{ color:var(--neon-blue); clip-path:inset(0 0 58% 0); transform:translate(-2px,-1px); animation:glitchShift 3.4s infinite linear alternate-reverse; opacity:.7; }
+  .glitch-text::after{ color:var(--neon-pink); clip-path:inset(42% 0 0 0); transform:translate(2px,1px); animation:glitchShift 2.7s infinite linear alternate-reverse; opacity:.7; }
+  @keyframes glitchShift{
+    0%{ transform:translate(0,0); } 20%{ transform:translate(-3px,1px); } 40%{ transform:translate(3px,-1px); }
+    60%{ transform:translate(-2px,2px); } 80%{ transform:translate(2px,-2px); } 100%{ transform:translate(0,0); }
+  }
+
+  .hero-tagline{ font-size:clamp(18px,2.2vw,24px); font-weight:600; color:var(--text-primary); margin-bottom:16px; letter-spacing:.3px; }
+  .hero-sub{ color:var(--text-muted); font-size:16px; max-width:560px; margin-bottom:38px; }
+
+  .hero-actions{ display:flex; gap:18px; flex-wrap:wrap; margin-bottom:54px; }
+
+  .btn{
+    font-family:var(--font-body); font-size:14.5px; font-weight:700; letter-spacing:.4px;
+    padding:15px 30px; border-radius:999px; cursor:pointer; border:1px solid transparent;
+    position:relative; overflow:hidden; transition:transform .25s ease, box-shadow .25s ease, opacity .25s ease;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn::before{
+    content:''; position:absolute; top:0; left:-120%; width:60%; height:100%;
+    background:linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
+    transform:skewX(-20deg); transition:left .6s ease;
+  }
+  .btn:hover::before{ left:130%; }
+  .btn-arrow{ transition:transform .25s ease; }
+  .btn:hover .btn-arrow{ transform:translateX(4px); }
+
+  .btn-primary{ background:var(--grad-main); color:#04060d; box-shadow:0 8px 30px -10px rgba(51,217,255,0.55); }
+  .btn-primary:hover{ transform:translateY(-2px) scale(1.02); box-shadow:0 14px 38px -8px rgba(166,87,255,0.6); }
+
+  .btn-ghost{ background:rgba(255,255,255,0.02); border-color:var(--glass-border-strong); color:var(--neon-blue); }
+  .btn-ghost:hover{ background:rgba(51,217,255,0.08); transform:translateY(-2px); box-shadow:0 0 24px -6px rgba(51,217,255,0.4); }
+
+  .btn-block{ width:100%; justify-content:center; }
+  .btn-danger-outline{ background:transparent; border-color:rgba(255,92,122,0.4); color:var(--danger); font-size:12.5px; padding:10px 20px; }
+  .btn-danger-outline:hover{ background:rgba(255,92,122,0.08); }
+
+  .hero-stats-strip{
+    display:flex; align-items:center; gap:24px; padding:20px 26px; border-radius:var(--radius-lg);
+    background:var(--glass-bg); border:1px solid var(--glass-border); width:fit-content;
+  }
+  .strip-item{ display:flex; flex-direction:column; gap:2px; }
+  .strip-num{ font-family:var(--font-display); font-size:22px; color:var(--neon-blue); }
+  .strip-label{ font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-faint); }
+  .strip-divider{ width:1px; height:28px; background:var(--glass-border-strong); }
+
+  .hero-scroll-hint{
+    position:absolute; bottom:36px; left:64px; font-family:var(--font-mono); font-size:11px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--text-faint); display:flex; align-items:center; gap:8px; z-index:2;
+  }
+  .chevron{ animation:floatY 1.8s infinite ease-in-out; color:var(--neon-blue); }
+
+  /* ===================================================================
+     FORMS
+  =================================================================== */
+  .field{ margin-bottom:18px; display:flex; flex-direction:column; gap:8px; }
+  .field label{ font-size:12.5px; font-weight:700; letter-spacing:.4px; color:var(--text-muted); text-transform:uppercase; }
+  .field input, .field textarea, .field select{
+    background:rgba(255,255,255,0.035); border:1px solid var(--glass-border); border-radius:var(--radius-sm);
+    padding:13px 15px; color:var(--text-primary); font-family:var(--font-body); font-size:14.5px;
+    transition:border-color .2s ease, box-shadow .2s ease; resize:vertical;
+  }
+  .field input::placeholder, .field textarea::placeholder{ color:var(--text-faint); }
+  .field input:focus, .field textarea:focus, .field select:focus{
+    outline:none; border-color:var(--neon-blue); box-shadow:0 0 0 3px rgba(51,217,255,0.14);
+  }
+  .field select{ cursor:pointer; }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+  .empty-state{ color:var(--text-faint); font-size:14px; font-style:italic; padding:30px 10px; text-align:center; }
+
+  /* ===================================================================
+     FUTURE SELF
+  =================================================================== */
+  .result-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .result-tile{
+    background:rgba(255,255,255,0.03); border:1px solid var(--glass-border); border-radius:var(--radius-md);
+    padding:16px 18px; display:flex; flex-direction:column; gap:6px; animation:fadeInUp .5s ease both;
+  }
+  .result-tile.wide{ grid-column:1/-1; }
+  .result-tile.accent{ border-color:rgba(166,87,255,0.4); box-shadow:0 0 24px -10px rgba(166,87,255,0.5); }
+  .tile-icon{ font-size:18px; color:var(--neon-blue); }
+  .tile-label{ font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-faint); }
+  .tile-value{ font-size:14.5px; color:var(--text-primary); line-height:1.5; }
+
+  /* ===================================================================
+     LIFE RPG
+  =================================================================== */
+  .rpg-layout{ display:grid; grid-template-columns:1.1fr 1fr; gap:28px; }
+  .rpg-layout .achievements-card{ grid-column:1/-1; }
+
+  .level-display{ display:flex; align-items:center; gap:24px; margin-bottom:28px; }
+  .level-ring{
+    width:84px; height:84px; border-radius:50%; flex:none;
+    background:conic-gradient(var(--neon-blue), var(--neon-purple), var(--neon-pink), var(--neon-blue));
+    display:flex; align-items:center; justify-content:center; position:relative;
+    box-shadow:0 0 30px -6px rgba(51,217,255,0.5);
+  }
+  .level-ring::before{ content:''; position:absolute; inset:5px; border-radius:50%; background:var(--bg-panel); }
+  .level-ring span{ position:relative; font-family:var(--font-display); font-size:26px; z-index:2; }
+  .level-ring small{ position:absolute; bottom:14px; font-size:9px; letter-spacing:1px; color:var(--text-faint); z-index:2; }
+  .level-ring.level-up-pulse{ animation:levelPulse .9s ease; }
+  @keyframes levelPulse{ 0%{ box-shadow:0 0 0px rgba(51,217,255,0.6); } 50%{ box-shadow:0 0 50px 6px rgba(166,87,255,0.7); } 100%{ box-shadow:0 0 30px -6px rgba(51,217,255,0.5); } }
+
+  .xp-info{ flex:1; }
+  .xp-bar-label{ display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:11.5px; color:var(--text-muted); margin-bottom:8px; }
+  .total-xp{ margin-top:8px; font-size:11.5px; color:var(--text-faint); }
+  .total-xp strong{ color:var(--neon-blue); }
+
+  .bar-track{ height:11px; border-radius:999px; background:rgba(255,255,255,0.06); overflow:hidden; position:relative; }
+  .bar-track.small{ height:8px; flex:1; }
+  .bar-fill{ height:100%; border-radius:999px; background:var(--grad-main); width:0%; transition:width .7s cubic-bezier(.4,0,.2,1); position:relative; overflow:hidden; }
+  .bar-fill::after{
+    content:''; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+    background-size:200% 100%; animation:shimmerMove 2.4s linear infinite;
+  }
+  .bar-fill.strength-fill{ background:linear-gradient(90deg,#ff8a3d,#ff4fc3); }
+  .bar-fill.knowledge-fill{ background:linear-gradient(90deg,var(--neon-blue),#3d7bff); }
+  .bar-fill.discipline-fill{ background:linear-gradient(90deg,var(--neon-green),#33d9ff); }
+  .bar-fill.creativity-fill{ background:linear-gradient(90deg,var(--neon-purple),var(--neon-pink)); }
+
+  .stat-rows{ display:flex; flex-direction:column; gap:16px; }
+  .stat-row{ display:grid; grid-template-columns:24px 100px 1fr 40px; align-items:center; gap:12px; }
+  .stat-icon{ font-size:15px; color:var(--neon-purple); text-align:center; }
+  .stat-name{ font-size:13px; color:var(--text-muted); font-weight:600; }
+  .stat-value{ font-family:var(--font-mono); font-size:13px; text-align:right; color:var(--text-primary); }
+
+  .actions-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .action-btn{
+    background:rgba(255,255,255,0.03); border:1px solid var(--glass-border); border-radius:var(--radius-md);
+    padding:20px 16px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;
+    transition:all .25s ease; color:var(--text-primary);
+  }
+  .action-btn:hover{ border-color:var(--neon-blue); background:rgba(51,217,255,0.06); transform:translateY(-3px); box-shadow:0 14px 30px -14px rgba(51,217,255,0.5); }
+  .action-btn:active{ transform:translateY(0) scale(.97); }
+  .action-icon{ font-size:22px; color:var(--neon-blue); }
+  .action-label{ font-size:13.5px; font-weight:700; }
+  .action-reward{ font-size:10.5px; color:var(--text-faint); letter-spacing:.3px; }
+
+  .achievements-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .badge{
+    border:1px solid var(--glass-border); border-radius:var(--radius-md); padding:16px 10px; text-align:center;
+    display:flex; flex-direction:column; align-items:center; gap:6px; background:rgba(255,255,255,0.02);
+    filter:grayscale(1); opacity:.4; transition:all .4s ease;
+  }
+  .badge.unlocked{
+    filter:none; opacity:1; border-color:rgba(166,87,255,0.45); background:rgba(166,87,255,0.06);
+    box-shadow:0 0 22px -8px rgba(166,87,255,0.6); animation:fadeInUp .5s ease both;
+  }
+  .badge-icon{ font-size:22px; color:var(--neon-purple); }
+  .badge-name{ font-size:11.5px; font-weight:700; }
+  .badge-desc{ font-size:9.5px; color:var(--text-faint); line-height:1.4; }
+
+  /* ===================================================================
+     TIME CAPSULE
+  =================================================================== */
+  .capsule-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:0; }
+  .capsule-card{
+    border:1px solid var(--glass-border); border-radius:var(--radius-md); padding:22px 18px; text-align:center;
+    background:rgba(255,255,255,0.03); position:relative; animation:fadeInUp .5s ease both;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+  }
+  .capsule-card.unlocked{ border-color:rgba(61,242,168,0.4); box-shadow:0 0 22px -10px rgba(61,242,168,0.45); text-align:left; align-items:flex-start; }
+  .lock-icon{ width:20px; height:16px; border:2px solid var(--neon-blue); border-radius:4px; position:relative; margin:0 auto 6px; }
+  .lock-icon::before{ content:''; position:absolute; top:-10px; left:2px; width:11px; height:11px; border:2px solid var(--neon-blue); border-bottom:none; border-radius:7px 7px 0 0; transition:all .3s ease; }
+  .lock-icon.unlocked{ border-color:var(--neon-green); }
+  .lock-icon.unlocked::before{ border-color:var(--neon-green); transform:translateX(5px) rotate(-18deg); }
+  .capsule-status{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:1.5px; color:var(--neon-blue); }
+  .capsule-card.unlocked .capsule-status{ color:var(--neon-green); }
+  .capsule-countdown{ font-size:13px; font-weight:700; color:var(--text-primary); }
+  .capsule-unlock-date{ font-size:11px; color:var(--text-faint); }
+  .capsule-message{ font-size:13.5px; color:var(--text-primary); line-height:1.6; }
+  .capsule-meta{ font-size:10.5px; color:var(--text-faint); margin-top:auto; }
+
+  /* ===================================================================
+     ANALYTICS
+  =================================================================== */
+  .chart-card canvas{ width:100%; height:190px; display:block; }
+  .chart-caption{ margin-top:14px; font-size:11.5px; color:var(--text-faint); }
+
+  /* ===================================================================
+     LEGACY BUILDER
+  =================================================================== */
+  .legacy-card{
+    position:relative; border:1px solid var(--glass-border-strong); border-radius:var(--radius-lg);
+    padding:34px; background:linear-gradient(160deg, rgba(51,217,255,0.07), rgba(166,87,255,0.07));
+    overflow:hidden; animation:fadeInUp .6s ease both;
+  }
+  .legacy-shine{
+    position:absolute; inset:-50%; background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%);
+    background-size:200% 200%; animation:shimmerMove 5s linear infinite; pointer-events:none;
+  }
+  .legacy-quote{ font-family:var(--font-display); font-size:64px; line-height:.4; color:var(--neon-purple); opacity:.5; }
+  .legacy-motto{ font-size:21px; font-weight:700; font-style:italic; color:var(--text-primary); margin:10px 0 6px; }
+  .legacy-name{ font-family:var(--font-mono); font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--neon-blue); }
+  .legacy-divider{ height:1px; background:var(--glass-border-strong); margin:20px 0; }
+  .legacy-row{ display:flex; flex-direction:column; gap:4px; margin-bottom:14px; }
+  .legacy-label{ font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-faint); }
+  .legacy-text{ font-size:14px; color:var(--text-primary); line-height:1.55; }
+  .legacy-footer{ display:flex; justify-content:space-between; margin-top:18px; font-family:var(--font-mono); font-size:10px; color:var(--text-faint); letter-spacing:1px; }
+
+  /* ===================================================================
+     MISSION GENERATOR
+  =================================================================== */
+  .mission-card{ max-width:900px; }
+  .mission-form-row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; align-items:end; margin-bottom:8px; }
+  .mission-result{ margin-top:30px; border-top:1px solid var(--glass-border); padding-top:26px; }
+  .mission-statement{
+    font-size:19px; font-weight:600; color:var(--text-primary); line-height:1.6; font-style:italic;
+    border-left:3px solid var(--neon-blue); padding-left:18px; margin-bottom:24px;
+  }
+  .mission-meta{ display:flex; gap:30px; margin-bottom:22px; flex-wrap:wrap; }
+  .meta-block{ display:flex; flex-direction:column; gap:4px; }
+  .meta-label{ font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-faint); }
+  .meta-value{ font-size:15px; font-weight:700; color:var(--neon-purple); }
+  .growth-plan ol{ display:flex; flex-direction:column; gap:10px; counter-reset:step; margin-top:10px; }
+  .growth-plan li{
+    position:relative; padding-left:34px; font-size:14px; color:var(--text-primary); line-height:1.55;
+    font-family:var(--font-body);
+  }
+  .growth-plan li::before{
+    counter-increment:step; content:counter(step); position:absolute; left:0; top:0;
+    width:22px; height:22px; border-radius:6px; background:var(--grad-main); color:#04060d;
+    font-family:var(--font-mono); font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ===================================================================
+     FOOTER + TOASTS
+  =================================================================== */
+  .app-footer{ padding:50px 64px 70px; text-align:center; color:var(--text-faint); font-size:12.5px; display:flex; flex-direction:column; gap:14px; align-items:center; }
+
+  .toast-stack{ position:fixed; bottom:24px; right:24px; z-index:200; display:flex; flex-direction:column; gap:10px; max-width:320px; }
+  .toast{
+    background:var(--glass-bg-strong); border:1px solid var(--glass-border-strong); border-radius:var(--radius-md);
+    padding:14px 16px; display:flex; align-items:center; gap:10px; backdrop-filter:blur(16px);
+    box-shadow:0 14px 40px -16px rgba(0,0,0,0.8); transform:translateX(120%); opacity:0; transition:all .4s cubic-bezier(.4,0,.2,1);
+    font-size:13px;
+  }
+  .toast.show{ transform:translateX(0); opacity:1; }
+  .toast.hide{ transform:translateX(120%); opacity:0; }
+  .toast-icon{ font-size:15px; color:var(--neon-blue); flex:none; }
+  .toast-achievement .toast-icon{ color:var(--neon-purple); }
+  .toast-success .toast-icon{ color:var(--neon-green); }
+  .toast-warning .toast-icon{ color:var(--warning); }
+
+  /* ===================================================================
+     KEYFRAMES (shared)
+  =================================================================== */
+  @keyframes fadeInUp{ from{ opacity:0; transform:translateY(22px); } to{ opacity:1; transform:translateY(0); } }
+  @keyframes pulseDot{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+  @keyframes floatY{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-7px); } }
+  @keyframes shimmerMove{ 0%{ background-position:-200% 0; } 100%{ background-position:200% 0; } }
+
+  /* ===================================================================
+     RESPONSIVE
+  =================================================================== */
+  @media (max-width:980px){
+    .sidebar{ transform:translateX(-100%); }
+    .sidebar.open{ transform:translateX(0); }
+    .menu-toggle{ display:flex; align-items:center; justify-content:center; }
+    .main-content{ margin-left:0; }
+    .panel{ padding:90px 26px 70px; }
+    .hero-panel{ padding:0 26px; }
+    .grid-2col, .charts-grid, .rpg-layout, .capsule-grid{ grid-template-columns:1fr; }
+    .achievements-grid{ grid-template-columns:repeat(2,1fr); }
+    .mission-form-row{ grid-template-columns:1fr; }
+    .hero-stats-strip{ flex-wrap:wrap; gap:16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{
+      animation-duration:.01ms !important; animation-iteration-count:1 !important;
+      transition-duration:.01ms !important; scroll-behavior:auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">⌬</div>
+      <div class="brand-text">
+        <strong>HUMANITY<span>.OS</span></strong>
+        <small>kernel v2.1 // life</small>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#hero" class="nav-link active" data-section="hero"><span class="nav-icon">◈</span>Home</a>
+      <a href="#future-self" class="nav-link" data-section="future-self"><span class="nav-icon">◎</span>Future Self</a>
+      <a href="#life-rpg" class="nav-link" data-section="life-rpg"><span class="nav-icon">⌁</span>Life RPG</a>
+      <a href="#time-capsule" class="nav-link" data-section="time-capsule"><span class="nav-icon">⧖</span>Time Capsule</a>
+      <a href="#analytics" class="nav-link" data-section="analytics"><span class="nav-icon">▣</span>Analytics</a>
+      <a href="#legacy" class="nav-link" data-section="legacy"><span class="nav-icon">✦</span>Legacy</a>
+      <a href="#mission" class="nav-link" data-section="mission"><span class="nav-icon">⬡</span>Mission</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-line"><span class="status-dot"></span>System Online</div>
+      <div class="mini-level">OPERATOR LEVEL <span id="sidebar-level">1</span></div>
+    </div>
+  </aside>
+
+  <button class="menu-toggle" id="menu-toggle" aria-label="Toggle navigation">☰</button>
+
+  <main class="main-content" id="main-content">
+
+    <!-- ============================= HERO ============================= -->
+    <section id="hero" class="panel hero-panel">
+      <div class="hero-grid-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-eyebrow"><span class="pulse-dot"></span>Boot Sequence Complete</div>
+        <h1 class="hero-title"><span class="glitch-text" data-text="HUMANITY OS">HUMANITY OS</span></h1>
+        <p class="hero-tagline">The Operating System For Your Life</p>
+        <p class="hero-sub">Run your own existence like a system you can inspect, upgrade, and ship. Simulate your future self, level up real stats, encode a legacy, and compile a mission — entirely in your browser, entirely yours.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" data-scroll="life-rpg">Start Journey <span class="btn-arrow">→</span></button>
+          <button class="btn btn-ghost" data-scroll="future-self">Explore Future Self</button>
+        </div>
+        <div class="hero-stats-strip">
+          <div class="strip-item"><span class="strip-num" id="strip-level">1</span><span class="strip-label">Level</span></div>
+          <div class="strip-divider"></div>
+          <div class="strip-item"><span class="strip-num" id="strip-xp">0</span><span class="strip-label">Total XP</span></div>
+          <div class="strip-divider"></div>
+          <div class="strip-item"><span class="strip-num" id="strip-capsules">0</span><span class="strip-label">Capsules</span></div>
+        </div>
+      </div>
+      <div class="hero-scroll-hint">Scroll to initialize modules <span class="chevron">⌄</span></div>
+    </section>
+
+    <!-- ======================= FUTURE SELF SIMULATOR ======================= -->
+    <section id="future-self" class="panel">
+      <div class="panel-header">
+        <span class="panel-index">Module 01</span>
+        <h2>Future Self AI Simulator</h2>
+        <p>Project a probable version of you, computed from your current inputs.</p>
+      </div>
+      <div class="grid-2col">
+        <div class="glass-card">
+          <div class="field">
+            <label for="fs-name">Name</label>
+            <input id="fs-name" type="text" placeholder="e.g. Alex Rivera">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="fs-age">Current Age</label>
+              <input id="fs-age" type="number" min="1" max="120" placeholder="e.g. 24">
+            </div>
+            <div class="field">
+              <label for="fs-skill">Current Skill</label>
+              <input id="fs-skill" type="text" placeholder="e.g. writing code">
+            </div>
+          </div>
+          <div class="field">
+            <label for="fs-career">Dream Career</label>
+            <input id="fs-career" type="text" placeholder="e.g. product designer">
+          </div>
+          <div class="field">
+            <label for="fs-goal">Biggest Goal</label>
+            <input id="fs-goal" type="text" placeholder="e.g. building a company that lasts">
+          </div>
+          <button class="btn btn-primary btn-block" id="btn-generate-future">Generate Future Self <span class="btn-arrow">→</span></button>
+        </div>
+        <div class="glass-card" id="future-result">
+          <p class="empty-state">Run the simulator to project your future self.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= LIFE RPG ============================= -->
+    <section id="life-rpg" class="panel">
+      <div class="panel-header">
+        <span class="panel-index">Module 02</span>
+        <h2>Life RPG System</h2>
+        <p>Every real action you take compounds into XP. Train your stats, level up, unlock achievements.</p>
+      </div>
+      <div class="rpg-layout">
+        <div class="glass-card">
+          <div class="level-display">
+            <div class="level-ring" id="level-ring"><span id="rpg-level">1</span><small>LV</small></div>
+            <div class="xp-info">
+              <div class="xp-bar-label"><span>Experience</span><span id="rpg-xp-text">0 / 100</span></div>
+              <div class="bar-track"><div class="bar-fill xp-fill" id="rpg-xp-bar" style="width:0%"></div></div>
+              <div class="total-xp">Total XP earned: <strong id="rpg-total-xp">0</strong></div>
+            </div>
+          </div>
+          <div class="stat-rows">
+            <div class="stat-row">
+              <span class="stat-icon">▲</span><span class="stat-name">Strength</span>
+              <div class="bar-track small"><div class="bar-fill strength-fill" id="bar-strength" style="width:6%"></div></div>
+              <span class="stat-value" id="val-strength">10</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-icon">◆</span><span class="stat-name">Knowledge</span>
+              <div class="bar-track small"><div class="bar-fill knowledge-fill" id="bar-knowledge" style="width:6%"></div></div>
+              <span class="stat-value" id="val-knowledge">10</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-icon">▣</span><span class="stat-name">Discipline</span>
+              <div class="bar-track small"><div class="bar-fill discipline-fill" id="bar-discipline" style="width:6%"></div></div>
+              <span class="stat-value" id="val-discipline">10</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-icon">✦</span><span class="stat-name">Creativity</span>
+              <div class="bar-track small"><div class="bar-fill creativity-fill" id="bar-creativity" style="width:6%"></div></div>
+              <span class="stat-value" id="val-creativity">10</span>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card">
+          <h3>Daily Actions</h3>
+          <div class="actions-grid">
+            <button class="action-btn" data-action="study"><span class="action-icon">◆</span><span class="action-label">Study</span><span class="action-reward">+15 XP · Knowledge</span></button>
+            <button class="action-btn" data-action="exercise"><span class="action-icon">▲</span><span class="action-label">Exercise</span><span class="action-reward">+12 XP · Strength</span></button>
+            <button class="action-btn" data-action="build"><span class="action-icon">⬡</span><span class="action-label">Build Project</span><span class="action-reward">+25 XP · Creativity</span></button>
+            <button class="action-btn" data-action="read"><span class="action-icon">▣</span><span class="action-label">Read Book</span><span class="action-reward">+10 XP · Knowledge</span></button>
+          </div>
+        </div>
+        <div class="glass-card achievements-card">
+          <h3>Achievements</h3>
+          <div class="achievements-grid" id="achievements-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= TIME CAPSULE ============================= -->
+    <section id="time-capsule" class="panel">
+      <div class="panel-header">
+        <span class="panel-index">Module 03</span>
+        <h2>Time Capsule</h2>
+        <p>Write a message, lock it to a future date, and let your system deliver it when the time comes.</p>
+      </div>
+      <div class="grid-2col">
+        <div class="glass-card">
+          <div class="field">
+            <label for="capsule-message">Message to your future self</label>
+            <textarea id="capsule-message" rows="6" placeholder="Dear future me..."></textarea>
+          </div>
+          <div class="field">
+            <label for="capsule-date">Unlock date</label>
+            <input id="capsule-date" type="date">
+          </div>
+          <button class="btn btn-primary btn-block" id="btn-save-capsule">Save Capsule <span class="btn-arrow">→</span></button>
+        </div>
+        <div>
+          <div class="capsule-grid" id="capsule-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= ANALYTICS ============================= -->
+    <section id="analytics" class="panel">
+      <div class="panel-header">
+        <span class="panel-index">Module 04</span>
+        <h2>Life Analytics</h2>
+        <p>Every action you log feeds these graphs. Watch your own growth curve in real time.</p>
+      </div>
+      <div class="charts-grid">
+        <div class="glass-card chart-card">
+          <h3>XP Growth</h3>
+          <canvas id="chart-xp"></canvas>
+          <p class="chart-caption">Total experience earned across every logged session.</p>
+        </div>
+        <div class="glass-card chart-card">
+          <h3>Skill Growth</h3>
+          <canvas id="chart-skills"></canvas>
+          <p class="chart-caption">Current standing across your four core stats.</p>
+        </div>
+        <div class="glass-card chart-card">
+          <h3>Productivity Score</h3>
+          <canvas id="chart-productivity"></canvas>
+          <p class="chart-caption">A composite score blending level and stat balance.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= LEGACY BUILDER ============================= -->
+    <section id="legacy" class="panel">
+      <div class="panel-header">
+        <span class="panel-index">Module 05</span>
+        <h2>Legacy Builder</h2>
+        <p>Compile what matters most into a single, permanent digital legacy card.</p>
+      </div>
+      <div class="grid-2col">
+        <div class="glass-card">
+          <div class="field">
+            <label for="legacy-name">Name</label>
+            <input id="legacy-name" type="text" placeholder="Your name">
+          </div>
+          <div class="field">
+            <label for="legacy-lesson">Life Lesson</label>
+            <textarea id="legacy-lesson" rows="3" placeholder="The one thing you'd tell everyone..."></textarea>
+          </div>
+          <div class="field">
+            <label for="legacy-achievement">Achievement</label>
+            <input id="legacy-achievement" type="text" placeholder="What you're most proud of">
+          </div>
+          <div class="field">
+            <label for="legacy-motto">Personal Motto</label>
+            <input id="legacy-motto" type="text" placeholder="Your guiding line">
+          </div>
+          <button class="btn btn-primary btn-block" id="btn-generate-legacy">Generate Legacy Card <span class="btn-arrow">→</span></button>
+        </div>
+        <div id="legacy-output">
+          <div class="glass-card"><p class="empty-state">Build your legacy card to see it appear here.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= MISSION GENERATOR ============================= -->
+    <section id="mission" class="panel">
+      <div class="panel-header">
+        <span class="panel-index">Module 06</span>
+        <h2>Mission Generator</h2>
+        <p>Compile a life mission, a recommended path, and a 3-step growth plan from where you stand right now.</p>
+      </div>
+      <div class="glass-card mission-card">
+        <div class="mission-form-row">
+          <div class="field" style="margin-bottom:0;">
+            <label for="mission-name">Name (optional)</label>
+            <input id="mission-name" type="text" placeholder="Your name">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="mission-value">Core Value</label>
+            <select id="mission-value">
+              <option>Growth</option>
+              <option>Impact</option>
+              <option>Freedom</option>
+              <option>Mastery</option>
+              <option>Connection</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="mission-energy">Energy Style</label>
+            <select id="mission-energy">
+              <option>Builder</option>
+              <option>Thinker</option>
+              <option>Connector</option>
+              <option>Explorer</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btn-generate-mission" style="margin-top:8px;">Generate Mission <span class="btn-arrow">→</span></button>
+        <div id="mission-output">
+          <div class="mission-result" style="display:none;"></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <div>HUMANITY OS — built entirely client-side. Your data never leaves this browser.</div>
+      <button class="btn btn-danger-outline" id="btn-reset-all">Reset All Data</button>
+    </footer>
+
+  </main>
+</div>
+
+<div class="toast-stack" id="toast-stack"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* =================================================================
+     UTILITIES
+  ================================================================= */
+  const $ = (sel, ctx) => (ctx || document).querySelector(sel);
+  const $$ = (sel, ctx) => Array.from((ctx || document).querySelectorAll(sel));
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const pick = (arr) => arr[randInt(0, arr.length - 1)];
+  const uid = () => Math.random().toString(36).slice(2, 9).toUpperCase();
+  const formatDate = (d) => new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  const escapeHtml = (str) => String(str == null ? '' : str).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+  const debounce = (fn, wait) => {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+  };
+
+  const STORAGE_KEY = 'humanityOS.state.v1';
+
+  /* =================================================================
+     STATE
+  ================================================================= */
+  function defaultState(){
+    const now = Date.now();
+    return {
+      futureSelf: null,
+      unlocked: [],
+      rpg: {
+        level: 1, xp: 0, xpToNext: 100, totalXp: 0,
+        strength: 10, knowledge: 10, discipline: 10, creativity: 10,
+        history: [{ t: now, totalXp: 0, level: 1, strength: 10, knowledge: 10, discipline: 10, creativity: 10 }]
+      },
+      capsules: [],
+      legacy: null,
+      mission: null
+    };
+  }
+
+  function loadState(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      const parsed = JSON.parse(raw);
+      const base = defaultState();
+      return Object.assign(base, parsed, {
+        rpg: Object.assign(base.rpg, parsed.rpg || {}),
+        unlocked: parsed.unlocked || [],
+        capsules: parsed.capsules || []
+      });
+    } catch (e) {
+      console.warn('Humanity OS: state load failed, starting fresh.', e);
+      return defaultState();
+    }
+  }
+
+  function saveState(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch (e) { console.warn('Humanity OS: state save failed.', e); }
+  }
+
+  let state = loadState();
+
+  /* =================================================================
+     TOAST
+  ================================================================= */
+  const Toast = {
+    icons: { info: 'i', success: '✦', achievement: '⬡', warning: '!' },
+    show(message, type){
+      type = type || 'info';
+      const stack = $('#toast-stack');
+      const el = document.createElement('div');
+      el.className = 'toast toast-' + type;
+      el.innerHTML = '<span class="toast-icon">' + this.icons[type] + '</span><span class="toast-msg">' + escapeHtml(message) + '</span>';
+      stack.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('show'));
+      setTimeout(() => {
+        el.classList.remove('show');
+        el.classList.add('hide');
+        setTimeout(() => el.remove(), 420);
+      }, 4200);
+    }
+  };
+
+  /* =================================================================
+     PARTICLE BACKGROUND
+  ================================================================= */
+  const Particles = {
+    canvas: null, ctx: null, points: [], reduced: false,
+    init(){
+      this.canvas = document.getElementById('bg-canvas');
+      this.ctx = this.canvas.getContext('2d');
+      this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      this.resize();
+      this.spawn();
+      window.addEventListener('resize', debounce(() => { this.resize(); this.spawn(); }, 150));
+      if (this.reduced) { this.draw(); } else { this.loop(); }
+    },
+    resize(){
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+    },
+    spawn(){
+      const count = clamp(Math.floor((window.innerWidth * window.innerHeight) / 16000), 30, 120);
+      this.points = Array.from({ length: count }, () => ({
+        x: Math.random() * this.canvas.width,
+        y: Math.random() * this.canvas.height,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        r: Math.random() * 1.6 + 0.6,
+        hue: Math.random() < 0.5 ? 'blue' : 'purple'
+      }));
+    },
+    step(){
+      const w = this.canvas.width, h = this.canvas.height;
+      this.points.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > w) p.vx *= -1;
+        if (p.y < 0 || p.y > h) p.vy *= -1;
+      });
+    },
+    draw(){
+      const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      for (let i = 0; i < this.points.length; i++){
+        const p = this.points[i];
+        for (let j = i + 1; j < this.points.length; j++){
+          const q = this.points[j];
+          const dx = p.x - q.x, dy = p.y - q.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120){
+            ctx.strokeStyle = 'rgba(90,150,255,' + ((1 - dist / 120) * 0.16) + ')';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+          }
+        }
+      }
+      this.points.forEach(p => {
+        ctx.beginPath();
+        ctx.shadowBlur = 8;
+        if (p.hue === 'blue'){ ctx.fillStyle = 'rgba(51,217,255,0.85)'; ctx.shadowColor = '#33d9ff'; }
+        else { ctx.fillStyle = 'rgba(166,87,255,0.85)'; ctx.shadowColor = '#a657ff'; }
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    },
+    loop(){
+      this.step(); this.draw();
+      requestAnimationFrame(() => this.loop());
+    }
+  };
+
+  /* =================================================================
+     SIDEBAR + NAV
+  ================================================================= */
+  const Sidebar = {
+    init(){
+      this.sidebar = document.getElementById('sidebar');
+      this.toggleBtn = document.getElementById('menu-toggle');
+      this.toggleBtn.addEventListener('click', () => this.sidebar.classList.toggle('open'));
+    },
+    close(){ this.sidebar.classList.remove('open'); }
+  };
+
+  const Nav = {
+    init(){
+      this.links = $$('.nav-link');
+      this.sections = $$('.panel');
+      this.links.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const target = document.getElementById(link.dataset.section);
+          if (target) target.scrollIntoView({ behavior: Particles.reduced ? 'auto' : 'smooth' });
+          Sidebar.close();
+        });
+      });
+      $$('[data-scroll]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = document.getElementById(btn.dataset.scroll);
+          if (target) target.scrollIntoView({ behavior: 'smooth' });
+        });
+      });
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting){
+            this.links.forEach(l => l.classList.toggle('active', l.dataset.section === entry.target.id));
+          }
+        });
+      }, { threshold: 0.4 });
+      this.sections.forEach(s => observer.observe(s));
+    }
+  };
+
+  /* =================================================================
+     HERO / SIDEBAR STAT SYNC
+  ================================================================= */
+  function syncGlobalStrip(){
+    $('#strip-level').textContent = state.rpg.level;
+    $('#strip-xp').textContent = state.rpg.totalXp;
+    $('#strip-capsules').textContent = state.capsules.length;
+    $('#sidebar-level').textContent = state.rpg.level;
+  }
+
+  /* =================================================================
+     FUTURE SELF AI SIMULATOR
+  ================================================================= */
+  const FutureSelf = {
+    careerPrefixes: ['Lead', 'Principal', 'Chief', 'Visionary', 'Master', 'Award-Winning', 'World-Renowned', 'Pioneering'],
+    lifestyles: [
+      (n,g,s) => n + ' lives between two cities, splitting deep work on "' + g + '" with quiet mornings mastering ' + s + '.',
+      (n,g,s) => n + ' leads a small, focused team built around "' + g + '", working four-day weeks and mentoring others in ' + s + '.',
+      (n,g,s) => n + ' moves between hands-on projects and the occasional stage talk about "' + g + '", never far from a notebook full of ideas.',
+      (n,g,s) => n + ' runs a quiet, design-forward studio shipping work tied to "' + g + '" — ' + s + ' has long since become second nature.',
+      (n,g,s) => n + ' has traded hustle for depth: fewer hours, sharper focus, and an entire body of work built around "' + g + '".',
+      (n,g,s) => n + ' splits the year between building and resetting, treating ' + s + ' less like a skill now and more like a native language.'
+    ],
+    advice: [
+      (n,g,s) => 'Protect the two hours a day where ' + s + ' gets sharper — that compounding is what actually carries "' + g + '" home.',
+      (n,g,s) => 'Say no faster. The version of ' + (n||'you') + ' that reaches "' + g + '" said no to almost everything that wasn\'t it.',
+      (n,g,s) => 'Document the boring middle. The story of "' + g + '" will be told in the unglamorous reps with ' + s + ', not the highlight reel.',
+      (n,g,s) => 'Find one mentor and one peer group before chasing audience — "' + g + '" gets built faster with witnesses who push back.',
+      (n,g,s) => 'Ship the unfinished version of ' + s + ' in public. Feedback now is cheaper than confidence later.',
+      (n,g,s) => 'Revisit "' + g + '" every quarter and ask if it still scares you a little — if it doesn\'t, it\'s time to enlarge it.'
+    ],
+    achievements: [
+      (n,c) => n + ' ships a project under the ' + c + ' title that quietly changes how a few thousand people work.',
+      (n,c) => n + ' is invited to mentor the next generation of people chasing the same path toward becoming a ' + c + '.',
+      (n,c) => n + ' builds something as ' + c + ' that outlives the job title — a body of work people point to as proof.',
+      (n,c) => n + ' is trusted with the hardest, highest-stakes problem on the team as ' + c + ', and solves it without burning out.',
+      (n,c) => n + ' launches an independent project alongside the ' + c + ' role that ends up mattering more than expected.',
+      (n,c) => n + ' is quoted, cited, or referenced by strangers who only know the work — not the person behind the ' + c + ' title.'
+    ],
+    init(){
+      $('#btn-generate-future').addEventListener('click', () => this.generate());
+      this.render();
+    },
+    generate(){
+      const name = $('#fs-name').value.trim() || 'You';
+      const age = parseInt($('#fs-age').value, 10);
+      const career = $('#fs-career').value.trim();
+      const goal = $('#fs-goal').value.trim();
+      const skill = $('#fs-skill').value.trim();
+
+      if (!age || age < 1 || age > 119 || !career || !goal || !skill){
+        Toast.show('Fill in age, dream career, biggest goal and current skill first.', 'warning');
+        return;
+      }
+
+      const yearsAhead = randInt(8, 22);
+      const futureAge = age + yearsAhead;
+      const prefix = pick(this.careerPrefixes);
+      const futureCareer = prefix + ' ' + career;
+      const futureLifestyle = pick(this.lifestyles)(name, goal, skill);
+      const futureAdvice = pick(this.advice)(name, goal, skill);
+      const futureAchievement = pick(this.achievements)(name, career);
+
+      state.futureSelf = {
+        name, age, career, goal, skill,
+        futureAge, futureCareer, futureLifestyle, futureAdvice, futureAchievement,
+        generatedAt: Date.now()
+      };
+      saveState();
+      this.render();
+      Toast.show('Future self projection complete.', 'success');
+    },
+    render(){
+      const box = $('#future-result');
+      const fs = state.futureSelf;
+      if (!fs){
+        box.innerHTML = '<p class="empty-state">Run the simulator to project your future self.</p>';
+        return;
+      }
+      box.innerHTML =
+        '<div class="result-grid">' +
+          '<div class="result-tile"><span class="tile-icon">⧖</span><span class="tile-label">Future Age</span><span class="tile-value">' + fs.futureAge + ' years old</span></div>' +
+          '<div class="result-tile"><span class="tile-icon">◆</span><span class="tile-label">Future Career</span><span class="tile-value">' + escapeHtml(fs.futureCareer) + '</span></div>' +
+          '<div class="result-tile wide"><span class="tile-icon">⬡</span><span class="tile-label">Future Lifestyle</span><span class="tile-value">' + escapeHtml(fs.futureLifestyle) + '</span></div>' +
+          '<div class="result-tile wide"><span class="tile-icon">✦</span><span class="tile-label">Future Advice</span><span class="tile-value">' + escapeHtml(fs.futureAdvice) + '</span></div>' +
+          '<div class="result-tile wide accent"><span class="tile-icon">▣</span><span class="tile-label">Future Achievement</span><span class="tile-value">' + escapeHtml(fs.futureAchievement) + '</span></div>' +
+        '</div>';
+    }
+  };
+
+  /* =================================================================
+     LIFE RPG SYSTEM
+  ================================================================= */
+  const ACTIONS = {
+    study:    { label: 'Study',         xp: 15, stats: { knowledge: 3, discipline: 1 } },
+    exercise: { label: 'Exercise',      xp: 12, stats: { strength: 4, discipline: 1 } },
+    build:    { label: 'Build Project', xp: 25, stats: { creativity: 4, knowledge: 1 } },
+    read:     { label: 'Read Book',     xp: 10, stats: { knowledge: 2, creativity: 1 } }
+  };
+
+  const ACHIEVEMENTS = [
+    { id: 'first_steps',  name: 'First Steps',       desc: 'Complete your first action',  icon: '⬡', test: s => s.rpg.totalXp > 0 },
+    { id: 'bookworm',     name: 'Bookworm',          desc: 'Reach 50 Knowledge',           icon: '◆', test: s => s.rpg.knowledge >= 50 },
+    { id: 'iron_will',    name: 'Iron Will',         desc: 'Reach 50 Strength',            icon: '▲', test: s => s.rpg.strength >= 50 },
+    { id: 'disciplined',  name: 'Disciplined Mind',  desc: 'Reach 50 Discipline',          icon: '▣', test: s => s.rpg.discipline >= 50 },
+    { id: 'creative',     name: 'Creative Spark',    desc: 'Reach 50 Creativity',          icon: '✦', test: s => s.rpg.creativity >= 50 },
+    { id: 'lvl5',         name: 'Level 5 Operator',  desc: 'Reach Level 5',                icon: '⌁', test: s => s.rpg.level >= 5 },
+    { id: 'lvl10',        name: 'Level 10 Architect',desc: 'Reach Level 10',               icon: '⬢', test: s => s.rpg.level >= 10 },
+    { id: 'centurion',    name: 'Centurion',         desc: 'Earn 1000 total XP',           icon: 'Ω', test: s => s.rpg.totalXp >= 1000 },
+    { id: 'capsule_keeper',name: 'Capsule Keeper',   desc: 'Save your first time capsule', icon: '⧖', test: s => s.capsules.length >= 1 },
+    { id: 'time_traveler',name: 'Time Traveler',     desc: 'Save 3 time capsules',         icon: '◎', test: s => s.capsules.length >= 3 },
+    { id: 'legacy_set',   name: 'Legacy Encoded',    desc: 'Generate a legacy card',        icon: '✦', test: s => !!s.legacy },
+    { id: 'mission_set',  name: 'Mission Compiled',  desc: 'Generate a life mission',       icon: '▣', test: s => !!s.mission }
+  ];
+
+  const RPG = {
+    init(){
+      $$('.action-btn').forEach(btn => {
+        btn.addEventListener('click', () => this.performAction(btn.dataset.action));
+      });
+      this.render();
+      this.renderAchievements();
+    },
+    performAction(key){
+      const action = ACTIONS[key];
+      if (!action) return;
+      const rpg = state.rpg;
+      let leveledUp = false;
+
+      rpg.xp += action.xp;
+      rpg.totalXp += action.xp;
+      Object.keys(action.stats).forEach(stat => { rpg[stat] += action.stats[stat]; });
+
+      while (rpg.xp >= rpg.xpToNext){
+        rpg.xp -= rpg.xpToNext;
+        rpg.level += 1;
+        rpg.xpToNext = Math.floor(100 * Math.pow(1.25, rpg.level - 1));
+        leveledUp = true;
+      }
+
+      rpg.history.push({
+        t: Date.now(), totalXp: rpg.totalXp, level: rpg.level,
+        strength: rpg.strength, knowledge: rpg.knowledge, discipline: rpg.discipline, creativity: rpg.creativity
+      });
+      if (rpg.history.length > 60) rpg.history.shift();
+
+      saveState();
+      this.render();
+      this.renderAchievements();
+      syncGlobalStrip();
+      Analytics.render();
+
+      if (leveledUp){
+        Toast.show('Level up! You are now Level ' + rpg.level + '.', 'success');
+        const ring = $('#level-ring');
+        ring.classList.remove('level-up-pulse');
+        requestAnimationFrame(() => ring.classList.add('level-up-pulse'));
+      } else {
+        Toast.show(action.label + ' logged: +' + action.xp + ' XP.', 'info');
+      }
+    },
+    render(){
+      const rpg = state.rpg;
+      $('#rpg-level').textContent = rpg.level;
+      $('#rpg-xp-text').textContent = rpg.xp + ' / ' + rpg.xpToNext;
+      $('#rpg-xp-bar').style.width = clamp((rpg.xp / rpg.xpToNext) * 100, 0, 100) + '%';
+      $('#rpg-total-xp').textContent = rpg.totalXp;
+
+      const statMap = { strength: 'strength', knowledge: 'knowledge', discipline: 'discipline', creativity: 'creativity' };
+      Object.keys(statMap).forEach(key => {
+        const val = rpg[key];
+        $('#val-' + key).textContent = val;
+        $('#bar-' + key).style.width = clamp((val / 150) * 100, 4, 100) + '%';
+      });
+    },
+    renderAchievements(){
+      const grid = $('#achievements-grid');
+      let newlyUnlocked = [];
+      ACHIEVEMENTS.forEach(a => {
+        const isUnlocked = state.unlocked.includes(a.id);
+        if (!isUnlocked && a.test(state)){
+          state.unlocked.push(a.id);
+          newlyUnlocked.push(a);
+        }
+      });
+      if (newlyUnlocked.length){
+        saveState();
+        newlyUnlocked.forEach(a => Toast.show('Achievement unlocked: ' + a.name, 'achievement'));
+      }
+      grid.innerHTML = ACHIEVEMENTS.map(a => {
+        const unlocked = state.unlocked.includes(a.id);
+        return '<div class="badge ' + (unlocked ? 'unlocked' : '') + '" title="' + escapeHtml(a.desc) + '">' +
+          '<span class="badge-icon">' + a.icon + '</span>' +
+          '<span class="badge-name">' + escapeHtml(a.name) + '</span>' +
+          '<span class="badge-desc">' + escapeHtml(a.desc) + '</span>' +
+        '</div>';
+      }).join('');
+    }
+  };
+
+  /* =================================================================
+     TIME CAPSULE
+  ================================================================= */
+  const Capsule = {
+    init(){
+      const dateInput = $('#capsule-date');
+      const tomorrow = new Date(Date.now() + 86400000);
+      dateInput.min = tomorrow.toISOString().slice(0, 10);
+      $('#btn-save-capsule').addEventListener('click', () => this.save());
+      this.render();
+      setInterval(() => this.render(), 60000);
+    },
+    save(){
+      const message = $('#capsule-message').value.trim();
+      const unlockDate = $('#capsule-date').value;
+      if (!message || !unlockDate){
+        Toast.show('Write a message and choose an unlock date first.', 'warning');
+        return;
+      }
+      state.capsules.push({ id: uid(), message, unlockDate, createdAt: Date.now() });
+      saveState();
+      $('#capsule-message').value = '';
+      $('#capsule-date').value = '';
+      this.render();
+      RPG.renderAchievements();
+      syncGlobalStrip();
+      Toast.show('Time capsule sealed.', 'success');
+    },
+    render(){
+      const list = $('#capsule-list');
+      if (!state.capsules.length){
+        list.innerHTML = '<div class="glass-card"><p class="empty-state">No capsules sealed yet. Write your first message to the future.</p></div>';
+        return;
+      }
+      const sorted = state.capsules.slice().sort((a, b) => new Date(a.unlockDate) - new Date(b.unlockDate));
+      const now = Date.now();
+      list.innerHTML = sorted.map(cap => {
+        const unlockTime = new Date(cap.unlockDate).getTime();
+        const isUnlocked = now >= unlockTime;
+        if (isUnlocked){
+          return '<div class="capsule-card unlocked">' +
+            '<div class="lock-icon unlocked"></div>' +
+            '<div class="capsule-status">Unlocked · ' + formatDate(cap.unlockDate) + '</div>' +
+            '<p class="capsule-message">' + escapeHtml(cap.message) + '</p>' +
+            '<div class="capsule-meta">Written ' + formatDate(cap.createdAt) + '</div>' +
+          '</div>';
+        }
+        const daysLeft = Math.max(1, Math.ceil((unlockTime - now) / 86400000));
+        return '<div class="capsule-card locked">' +
+          '<div class="lock-icon"></div>' +
+          '<div class="capsule-status">Locked</div>' +
+          '<div class="capsule-countdown">' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + ' remaining</div>' +
+          '<div class="capsule-unlock-date">Unlocks ' + formatDate(cap.unlockDate) + '</div>' +
+        '</div>';
+      }).join('');
+    }
+  };
+
+  /* =================================================================
+     LIFE ANALYTICS (CANVAS CHARTS)
+  ================================================================= */
+  const Analytics = {
+    colors: { blue: '#33d9ff', purple: '#a657ff', green: '#3df2a8', pink: '#ff4fc3' },
+
+    setupCanvas(canvas){
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(rect.width, 100);
+      const h = canvas.clientHeight || 190;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w, h };
+    },
+
+    drawLineChart(canvas, points, color, fill){
+      if (!canvas) return;
+      const { ctx, w, h } = this.setupCanvas(canvas);
+      ctx.clearRect(0, 0, w, h);
+      const padding = { top: 14, right: 10, bottom: 18, left: 10 };
+      const plotW = w - padding.left - padding.right;
+      const plotH = h - padding.top - padding.bottom;
+      const max = Math.max(1, ...points);
+      const min = Math.min(0, ...points);
+      const range = (max - min) || 1;
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 3; i++){
+        const y = padding.top + (plotH / 3) * i;
+        ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(w - padding.right, y); ctx.stroke();
+      }
+
+      if (points.length < 2){
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '11px Consolas, monospace';
+        ctx.fillText('Log an action to start tracking', padding.left, h / 2);
+        return;
+      }
+
+      const stepX = plotW / (points.length - 1);
+      const coords = points.map((p, i) => ({
+        x: padding.left + stepX * i,
+        y: padding.top + plotH - ((p - min) / range) * plotH
+      }));
+
+      if (fill){
+        const grad = ctx.createLinearGradient(0, padding.top, 0, h - padding.bottom);
+        grad.addColorStop(0, color + 'aa'.replace('aa', '55'));
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.beginPath();
+        ctx.moveTo(coords[0].x, h - padding.bottom);
+        coords.forEach(c => ctx.lineTo(c.x, c.y));
+        ctx.lineTo(coords[coords.length - 1].x, h - padding.bottom);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(coords[0].x, coords[0].y);
+      coords.forEach(c => ctx.lineTo(c.x, c.y));
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = color;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      coords.forEach(c => {
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      });
+    },
+
+    drawBarChart(canvas, items){
+      if (!canvas) return;
+      const { ctx, w, h } = this.setupCanvas(canvas);
+      ctx.clearRect(0, 0, w, h);
+      const padding = { top: 16, bottom: 24, left: 10, right: 10 };
+      const plotW = w - padding.left - padding.right;
+      const plotH = h - padding.top - padding.bottom;
+      const max = Math.max(50, ...items.map(i => i.value));
+      const gap = 18;
+      const barW = (plotW - gap * (items.length - 1)) / items.length;
+
+      items.forEach((item, i) => {
+        const barH = (item.value / max) * plotH;
+        const x = padding.left + i * (barW + gap);
+        const y = padding.top + plotH - barH;
+        const grad = ctx.createLinearGradient(0, y, 0, padding.top + plotH);
+        grad.addColorStop(0, item.color);
+        grad.addColorStop(1, 'rgba(255,255,255,0.05)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        const r = 6;
+        ctx.moveTo(x, y + r);
+        ctx.arcTo(x, y, x + r, y, r);
+        ctx.lineTo(x + barW - r, y);
+        ctx.arcTo(x + barW, y, x + barW, y + r, r);
+        ctx.lineTo(x + barW, padding.top + plotH);
+        ctx.lineTo(x, padding.top + plotH);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.font = '11px Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(item.value), x + barW / 2, y - 6 < padding.top ? padding.top + 10 : y - 6);
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillText(item.label, x + barW / 2, padding.top + plotH + 16);
+      });
+      ctx.textAlign = 'left';
+    },
+
+    computeProductivity(snapshot){
+      const avg = (snapshot.strength + snapshot.knowledge + snapshot.discipline + snapshot.creativity) / 4;
+      return Math.round(clamp(avg + snapshot.level * 3, 0, 200));
+    },
+
+    render(){
+      const hist = state.rpg.history;
+      this.drawLineChart($('#chart-xp'), hist.map(h => h.totalXp), this.colors.blue, false);
+      this.drawBarChart($('#chart-skills'), [
+        { label: 'STR', value: state.rpg.strength, color: this.colors.pink },
+        { label: 'KNW', value: state.rpg.knowledge, color: this.colors.blue },
+        { label: 'DIS', value: state.rpg.discipline, color: this.colors.green },
+        { label: 'CRE', value: state.rpg.creativity, color: this.colors.purple }
+      ]);
+      this.drawLineChart($('#chart-productivity'), hist.map(h => this.computeProductivity(h)), this.colors.purple, true);
+    }
+  };
+
+  /* =================================================================
+     LEGACY BUILDER
+  ================================================================= */
+  const Legacy = {
+    init(){
+      $('#btn-generate-legacy').addEventListener('click', () => this.generate());
+      if (state.futureSelf && state.futureSelf.name) $('#legacy-name').value = state.futureSelf.name;
+      this.render();
+    },
+    generate(){
+      const name = $('#legacy-name').value.trim();
+      const lesson = $('#legacy-lesson').value.trim();
+      const achievement = $('#legacy-achievement').value.trim();
+      const motto = $('#legacy-motto').value.trim();
+      if (!lesson || !achievement || !motto){
+        Toast.show('Fill in your life lesson, achievement and motto first.', 'warning');
+        return;
+      }
+      state.legacy = { id: uid(), name, lesson, achievement, motto, createdAt: Date.now() };
+      saveState();
+      this.render();
+      RPG.renderAchievements();
+      Toast.show('Legacy card encoded.', 'success');
+    },
+    render(){
+      const out = $('#legacy-output');
+      const l = state.legacy;
+      if (!l){
+        out.innerHTML = '<div class="glass-card"><p class="empty-state">Build your legacy card to see it appear here.</p></div>';
+        return;
+      }
+      out.innerHTML =
+        '<div class="legacy-card">' +
+          '<div class="legacy-shine"></div>' +
+          '<div class="legacy-quote">"</div>' +
+          '<div class="legacy-motto">' + escapeHtml(l.motto) + '</div>' +
+          '<div class="legacy-name">' + escapeHtml(l.name || 'Anonymous Operator') + '</div>' +
+          '<div class="legacy-divider"></div>' +
+          '<div class="legacy-row"><span class="legacy-label">Achievement</span><span class="legacy-text">' + escapeHtml(l.achievement) + '</span></div>' +
+          '<div class="legacy-row"><span class="legacy-label">Life Lesson</span><span class="legacy-text">' + escapeHtml(l.lesson) + '</span></div>' +
+          '<div class="legacy-footer"><span>Encoded ' + formatDate(l.createdAt) + '</span><span>ID · ' + l.id + '</span></div>' +
+        '</div>';
+    }
+  };
+
+  /* =================================================================
+     MISSION GENERATOR
+  ================================================================= */
+  const Mission = {
+    pathByEnergy: {
+      Builder: 'The Architect Path',
+      Thinker: 'The Strategist Path',
+      Connector: 'The Diplomat Path',
+      Explorer: 'The Pioneer Path'
+    },
+    init(){
+      $('#btn-generate-mission').addEventListener('click', () => this.generate());
+      if (state.futureSelf && state.futureSelf.name) $('#mission-name').value = state.futureSelf.name;
+      this.render();
+    },
+    buildStatement(name, value, energy){
+      const who = name ? name + ', your' : 'Your';
+      return who + ' mission is to convert ' + value.toLowerCase() + ' into something the world can point to — operating as ' +
+        (energy === 'Architect' ? 'an' : 'a') + ' ' + energy.toLowerCase() +
+        ', compounding small, unglamorous reps into a body of work no one can fake.';
+    },
+    buildGrowthPlan(){
+      const r = state.rpg;
+      const entries = [
+        ['strength', r.strength], ['knowledge', r.knowledge],
+        ['discipline', r.discipline], ['creativity', r.creativity]
+      ].sort((a, b) => a[1] - b[1]);
+      const weakest = entries[0][0];
+      const second = entries[1][0];
+      const goalRef = (state.futureSelf && state.futureSelf.goal) ? state.futureSelf.goal : 'your stated goal';
+      return [
+        'Run a 14-day sprint focused entirely on ' + weakest + ' — logged daily, non-negotiable, tracked in the Life RPG panel.',
+        'Pair ' + second + ' with "' + goalRef + '" so every session compounds toward something specific instead of something vague.',
+        'At day 30, audit your stat panel. If ' + weakest + ' hasn\'t moved, the system needs a sharper target — not more willpower.'
+      ];
+    },
+    generate(){
+      const name = $('#mission-name').value.trim();
+      const value = $('#mission-value').value;
+      const energy = $('#mission-energy').value;
+      const statement = this.buildStatement(name, value, energy);
+      const path = this.pathByEnergy[energy];
+      const plan = this.buildGrowthPlan();
+      state.mission = { id: uid(), name, value, energy, statement, path, plan, createdAt: Date.now() };
+      saveState();
+      this.render();
+      RPG.renderAchievements();
+      Toast.show('Mission compiled.', 'success');
+    },
+    render(){
+      const wrap = $('#mission-output');
+      const m = state.mission;
+      if (!m){
+        wrap.innerHTML = '<div class="mission-result" style="display:none;"></div>';
+        return;
+      }
+      wrap.innerHTML =
+        '<div class="mission-result">' +
+          '<div class="mission-statement">"' + escapeHtml(m.statement) + '"</div>' +
+          '<div class="mission-meta">' +
+            '<div class="meta-block"><span class="meta-label">Recommended Path</span><span class="meta-value">' + escapeHtml(m.path) + '</span></div>' +
+            '<div class="meta-block"><span class="meta-label">Core Value</span><span class="meta-value">' + escapeHtml(m.value) + '</span></div>' +
+            '<div class="meta-block"><span class="meta-label">Energy Style</span><span class="meta-value">' + escapeHtml(m.energy) + '</span></div>' +
+          '</div>' +
+          '<div class="growth-plan"><span class="meta-label">Growth Plan</span><ol>' +
+            m.plan.map(step => '<li>' + escapeHtml(step) + '</li>').join('') +
+          '</ol></div>' +
+        '</div>';
+    }
+  };
+
+  /* =================================================================
+     RESET
+  ================================================================= */
+  function initReset(){
+    $('#btn-reset-all').addEventListener('click', () => {
+      const confirmed = confirm('This will permanently erase all Humanity OS data stored in this browser. Continue?');
+      if (!confirmed) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = defaultState();
+      saveState();
+      location.reload();
+    });
+  }
+
+  /* =================================================================
+     INIT
+  ================================================================= */
+  function init(){
+    Particles.init();
+    Sidebar.init();
+    Nav.init();
+    FutureSelf.init();
+    RPG.init();
+    Capsule.init();
+    Legacy.init();
+    Mission.init();
+    initReset();
+    Analytics.render();
+    syncGlobalStrip();
+    window.addEventListener('resize', debounce(() => Analytics.render(), 200));
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+
+</body>
+</html>
